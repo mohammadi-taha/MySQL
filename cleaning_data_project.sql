@@ -18,7 +18,7 @@ WITH duplicate_cte AS
 SELECT *,
 ROW_NUMBER() OVER(
 PARTITION BY company, location, industry,
-total_laid_off, percentage_laid_off, "date",
+total_laid_off, percentage_laid_off, 'date',
 stage, country, funds_raised_millions
 ) AS row_num
 FROM layoffs_staging
@@ -30,7 +30,7 @@ WHERE row_num > 1;
 -- check if we find duplicates truely:
 SELECT *
 FROM layoffs_staging
-WHERE company = "Cazoo";
+WHERE company = 'Cazoo';
 
 -- make another staging table (just columns): copy to clipboard - create statement - paste it - change the name of table - *add the row_num column*
 CREATE TABLE `layoffs_staging2` (
@@ -54,7 +54,7 @@ INSERT INTO layoffs_staging2
 SELECT *,
 ROW_NUMBER() OVER(
 PARTITION BY company, location, industry,
-total_laid_off, percentage_laid_off, "date",
+total_laid_off, percentage_laid_off, 'date',
 stage, country, funds_raised_millions
 ) AS row_num
 FROM layoffs_staging;
@@ -82,6 +82,41 @@ WHERE row_num > 1;
 
 -- change the setting to default:
 SET SQL_SAFE_UPDATES = 1;
+
+
+-- step(1) >> standardize data
+
+-- removing extra spaces from company column:
+UPDATE layoffs_staging2
+SET company = TRIM(company);
+
+-- checking another column:
+SELECT DISTINCT industry
+FROM layoffs_staging2
+ORDER BY 1;
+
+-- changing the name of same categories of industry:
+UPDATE layoffs_staging2
+SET industry = 'Crypto'
+WHERE industry LIKE 'Crypto%';
+
+-- double check:
+SELECT *
+FROM layoffs_staging2
+WHERE industry = 'Crypto%';
+
+-- changing the name of united states of country to be same:
+UPDATE layoffs_staging2
+SET country = 'United States'
+WHERE industry LIKE 'United States%';
+
+-- changing format and datatype of date column:
+UPDATE layoffs_staging2
+SET `date` = STR_TO_DATE(`date`, '%m/%d/%Y');
+
+ALTER TABLE layoffs_staging2
+MODIFY COLUMN `date` DATE;
+
 
 
 
