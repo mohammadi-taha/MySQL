@@ -84,7 +84,7 @@ WHERE row_num > 1;
 SET SQL_SAFE_UPDATES = 1;
 
 
--- step(1) >> standardize data
+-- step(2) >> standardize data
 
 -- removing extra spaces from company column:
 UPDATE layoffs_staging2
@@ -116,6 +116,63 @@ SET `date` = STR_TO_DATE(`date`, '%m/%d/%Y');
 
 ALTER TABLE layoffs_staging2
 MODIFY COLUMN `date` DATE;
+
+
+-- step(3) >> fix null and blank values:
+
+-- checking industry column:
+-- changing blanks to null:
+UPDATE layoffs_staging2
+SET industry = NULL
+WHERE industry = '';
+
+SELECT DISTINCT industry
+FROM layoffs_staging2;
+
+SELECT *
+FROM layoffs_staging2
+WHERE industry IS NULL;
+
+-- check null values beside their same data:
+SELECT t1.industry, t2.industry
+FROM layoffs_staging2 t1
+JOIN layoffs_staging2 t2
+	ON t1.company = t2.company
+WHERE t1.industry IS NULL
+AND t2.industry IS NOT NULL;
+
+-- populate nulls with same data:
+UPDATE layoffs_staging2 t1
+JOIN layoffs_staging2 t2
+	ON t1.company = t2.company
+SET t1.industry = t2.industry
+WHERE t1.industry IS NULL
+AND t2.industry IS NOT NULL;
+
+-- double check again null values beside their same data
+
+
+-- step(4) >> removing unnuccessary data or columns:
+
+-- checking null values of numerical columns:
+SELECT *
+FROM layoffs_staging2
+WHERE total_laid_off IS NULL
+AND percentage_laid_off IS NULL;
+
+-- deleting data that are null for two numerical columns (total_laid_off & percentage_laid_off):
+DELETE
+FROM layoffs_staging2
+WHERE total_laid_off IS NULL
+AND percentage_laid_off IS NULL;
+
+-- deleting extra column that we added:
+ALTER TABLE layoffs_staging2
+DROP COLUMN row_num;
+
+-- checking table:
+SELECT *
+FROM layoffs_staging2;
 
 
 
