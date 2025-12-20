@@ -76,22 +76,105 @@ DROP row_num;
 
 -- checking some info from table:
 
+-- max and min counting of lay off:
 SELECT MAX(total_laid_off), MAX(percentage_laid_off)
 FROM layoffs_staging3;
 
+-- companies that totally closed with total laid off:
 SELECT *
 FROM layoffs_staging3
 WHERE percentage_laid_off = 1
 ORDER BY total_laid_off DESC;
 
+-- companies that totally closed with checking fund:
 SELECT *
 FROM layoffs_staging3
 WHERE percentage_laid_off = 1
 ORDER BY funds_raised_millions DESC;
 
-SELECT *
+-- total laid off according to companies:
+SELECT company, SUM(total_laid_off)
 FROM layoffs_staging3
-ORDER BY company;
+GROUP BY company
+ORDER BY 2 DESC;
+
+-- check date:
+SELECT MIN(`date`), MAX(`date`)
+FROM layoffs_staging3;
+
+-- total laid off according to industry:
+SELECT industry, SUM(total_laid_off)
+FROM layoffs_staging3
+GROUP BY industry
+ORDER BY 2 DESC;
+
+-- total laid off according to country:
+SELECT country, SUM(total_laid_off)
+FROM layoffs_staging3
+GROUP BY country
+ORDER BY 2 DESC;
+
+-- total laid off according to year:
+SELECT YEAR(`date`), SUM(total_laid_off)
+FROM layoffs_staging3
+GROUP BY YEAR(`date`)
+ORDER BY 1 DESC;
+
+-- total laid off according to stage:
+SELECT stage, SUM(total_laid_off)
+FROM layoffs_staging3
+GROUP BY stage
+ORDER BY 2 DESC;
+
+
+-- checking the laid off according to month and year:
+SELECT SUBSTRING(`date`, 1, 7) AS `month`, SUM(total_laid_off)
+FROM layoffs_staging3
+WHERE SUBSTRING(`date`, 1, 7) IS NOT NULL
+GROUP BY `month`
+ORDER BY 1 ASC;
+
+-- rolling total laid off according to date:
+WITH rolling_total AS
+(
+SELECT SUBSTRING(`date`, 1, 7) AS `month`, SUM(total_laid_off) AS sum_laid_off
+FROM layoffs_staging3
+WHERE SUBSTRING(`date`, 1, 7) IS NOT NULL
+GROUP BY `month`
+ORDER BY 1 ASC
+)
+SELECT `month`, sum_laid_off, 
+SUM(sum_laid_off) OVER(ORDER BY `month`) AS rolling_total 
+FROM rolling_total;
+
+
+SELECT company, 
+YEAR(`date`), 
+SUM(total_laid_off)
+FROM layoffs_staging3
+GROUP BY company, YEAR(`date`)
+ORDER BY 3 DESC; 
+
+-- checking top 5 laid off accoring to the year:
+WITH company_year (company, years, total_laid_off) AS
+(
+SELECT company, 
+YEAR(`date`), 
+SUM(total_laid_off)
+FROM layoffs_staging3
+GROUP BY company, YEAR(`date`)
+), company_year_rank AS
+(SELECT *, 
+DENSE_RANK() OVER(PARTITION BY years ORDER BY total_laid_off DESC) AS ranking
+FROM company_year
+WHERE years IS NOT NULL
+)
+SELECT *
+FROM company_year_rank
+WHERE ranking <= 5;
+
+
+
 
 
 
