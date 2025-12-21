@@ -1,3 +1,5 @@
+-- cleaning data project
+
 -- making staging table:
 CREATE TABLE layoffs_staging
 LIKE layoffs;
